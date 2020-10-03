@@ -112,7 +112,8 @@ function initGames() {
 	pgClient.query('SELECT id, game_id, guild_id, channel_id FROM game WHERE is_active').then((res) => {
 		for (let row of res.rows) {
 			pgClient.query('SELECT user_id FROM player WHERE game_id = $1', [row.id]).then((playerRes) => {
-				initGame(row.game_id, row.guild_id, row.channel_id, playerRes.rows.map(playerRow => playerRow.user_id));
+				let playerIds = playerRes.rows.map(playerRow => playerRow.user_id);
+				initGame(row.game_id, row.guild_id, row.channel_id, playerIds);
 			}).catch(err => {
 				console.error(`Failed to look up game ${row.id}: ${err.stack}`);
 			})
@@ -126,11 +127,9 @@ function initGame(gameId, guildId, channelId, playerIds) {
 	if (!gameDatabase.has(gameId)) {
 		const guild = discordClient.guilds.cache.get(guildId);
 		const channel = guild.channels.cache.get(channelId);
-		const playersPromise = guild.members.fetch({user: playerIds});
-		playersPromise.then((players) => {
-			gameDatabase.set(gameId, new Game(gameId, players, channel, guild));
-			console.log('loaded game: ' + gameDatabase.get(gameId).toString());
-		});
+		const players = guild.members.cache.filter(member => playerIds.indexOf(member.id) >= 0);
+		gameDatabase.set(gameId, new Game(gameId, players, channel, guild));
+		console.log('loaded game: ' + gameDatabase.get(gameId).toString());
 	} else {
 		console.warn(`tried to load game ${gameId} but it already exists`);
 	}
