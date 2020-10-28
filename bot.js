@@ -108,26 +108,30 @@ function playerEquals(player, name) {
 	return player.user.username === name;
 }
 
-function initGames() {
-	pgClient.query('SELECT id, game_id, guild_id, channel_id FROM game WHERE is_active').then((res) => {
-		for (let row of res.rows) {
-			pgClient.query('SELECT user_id FROM player WHERE game_id = $1', [row.id]).then((playerRes) => {
-				let playerIds = playerRes.rows.map(playerRow => playerRow.user_id);
-				initGame(row.game_id, row.guild_id, row.channel_id, playerIds);
-			}).catch(err => {
-				console.error(`Failed to look up game ${row.id}: ${err.stack}`);
-			})
+async function initGames() {
+	let gamesResult;
+	try {
+		gamesResult = await pgClient.query('SELECT id, game_id, guild_id, channel_id FROM game WHERE is_active');
+	} catch(err) {
+		console.error(`Failed to read list of games: ${err.stack}`);
+		return;
+	};
+	for (const gameRow of gamesResult.rows) {
+		try {
+			const playersResult = await pgClient.query('SELECT user_id FROM player WHERE game_id = $1', [gameRow.id]);
+			let playerIds = playersResult.rows.map(playerRow => playerRow.user_id);
+			initGame(gameRow.game_id, gameRow.guild_id, gameRow.channel_id, playerIds);
+		} catch(err) {
+			console.error(`Failed to load game ${gameRow.id}: ${err.stack}`);
 		}
-	}).catch(err => {
-		console.error(`Failed to look up list of games: ${err.stack}`);
-	});
+	}
 }
 
-function initGame(gameId, guildId, channelId, playerIds) {
+async function initGame(gameId, guildId, channelId, playerIds) {
 	if (!gameDatabase.has(gameId)) {
 		const guild = discordClient.guilds.cache.get(guildId);
 		const channel = guild.channels.cache.get(channelId);
-		const players = guild.members.cache.filter(member => playerIds.indexOf(member.id) >= 0);
+		const players = await guild.members.fetch({user: playerIds});
 		gameDatabase.set(gameId, new Game(gameId, players, channel, guild));
 		console.log('loaded game: ' + gameDatabase.get(gameId).toString());
 	} else {
@@ -215,7 +219,7 @@ discordClient.on('message', msg => {
 		msg.reply(`recorded your 18xx.games username as ${username}`);
 	}
 	else if(msg.content === helpCommand) {
-		msg.reply(`commands supported: \n${monitorCommand} gameID @player1 @player2 @player3 @etc\n${forgetCommand} gameID\n${listCommand}\n${helpCommand}`);
+		msg.reply(`commands supported: \n${monitorCommand} gameID @player1 @player2 @player3 @etc\n${forgetCommand} gameID\n${listCommand}\n${usernameCommand} [username]\n${helpCommand}`);
 	}
 	else if (msg.content === '!wwjcld') {
 		msg.reply('clearclaw would dump B&O on you right now');
