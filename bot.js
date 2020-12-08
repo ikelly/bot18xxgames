@@ -186,7 +186,7 @@ discordClient.on('message', msg => {
 	if (msg.content.startsWith(monitorCommand)) {
 		fs.appendFileSync(commandLogFileName, `${msg.channel} ${msg.content}\n`);
 		const args = msg.content.slice(monitorCommand.length).trim().split(' ');
-		const gameID = args[0];
+		const gameID = Number.parseInt(args[0]);
 		if(!gameDatabase.has(gameID)) {
 			gameDatabase.set(gameID, new Game(gameID, msg.mentions.members, msg.channel, msg.guild));
 			insertGame(gameDatabase.get(gameID));
@@ -201,7 +201,7 @@ discordClient.on('message', msg => {
 	else if(msg.content.startsWith(forgetCommand)) {
 		fs.appendFileSync(commandLogFileName, `${msg.channel} ${msg.content}\n`);
 		const args = msg.content.slice(forgetCommand.length).trim().split(' ');
-		const gameID = args[0];
+		const gameID = Number.parseInt(args[0]);
 		console.log('forgetting game ' + gameID);
 		gameDatabase.delete(gameID);
 		deleteGame(gameID);
