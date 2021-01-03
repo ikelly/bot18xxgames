@@ -31,7 +31,7 @@ class Game {
 	constructor(id, players, channel, guild) {
 		this._id = id;
 		this._players = players.array();
-		this._currentPlayer = players.first();
+		this._currentPlayer = null;
 		this._channel = channel;
 		this._guild = guild;
 		this._needsAlert = false;
@@ -75,7 +75,7 @@ class Game {
 
 	advancePlayer(nextPlayerAccordingToWeb) {
 		// if the next player is different from the current player
-		let realNextUser = this._currentPlayer;
+		let realNextUser = null;
 
 		// we need to turn website's player name into discord player object here
 		// loop over all assigned discord users into this game and see if any match exists
