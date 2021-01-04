@@ -85,7 +85,7 @@ class Game {
 			}
 		}
 		// if there's a new current player, we need to notify them by setting needsAlert to true
-		if(this._currentPlayer != realNextUser) {
+		if(this._currentPlayer !== realNextUser && realNextUser !== null) {
 			// we need to alert the next player that it's their turn
 			console.log(`${nextPlayerAccordingToWeb}'s turn, time to notify them`);
 			this._needsAlert = true;
